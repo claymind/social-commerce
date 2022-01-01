@@ -5,7 +5,6 @@ const apiKey = JSON.stringify(process.env.SHOPIFY_API_KEY);
 
 module.exports = {
   env: {
-    customKey: 'my-value',
     REACT_APP_FIREBASE_AUTH_DOMAIN: 'social-commerce-5e155.firebaseapp.com',
     REACT_APP_FIREBASE_PROJECT_ID: 'social-commerce-5e155',
     REACT_APP_FIREBASE_STORAGE_BUCKET: 'social-commerce-5e155.appspot.com',
