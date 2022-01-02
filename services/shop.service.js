@@ -17,10 +17,10 @@ export const getShop = async (myshopifyDomain) => {
 };
 
 export const updateShop = async (data) => {
-  const { id, siteName } = data;
+  const { id, siteName, updatedAt } = data;
   try {
     const shopRef = firestore.doc(`shops/${id}`);
-    await shopRef.update({siteName});
+    await shopRef.update({siteName, updatedAt});
   } catch (error) {
     throw new Error(error);
   }

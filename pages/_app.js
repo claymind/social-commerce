@@ -7,7 +7,6 @@ import { Redirect } from "@shopify/app-bridge/actions";
 import { store, persistor } from '../modules/store';
 import { Provider as ReduxProvider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-// import withReduxContainer from '../with-redux.hoc';
 import { compose } from 'redux';
 import "@shopify/polaris/dist/styles.css";
 import translations from "@shopify/polaris/locales/en.json";

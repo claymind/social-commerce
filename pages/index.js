@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { gql, useLazyQuery } from "@apollo/client";
+import { gql, useLazyQuery, useMutation } from "@apollo/client";
 import { useAppBridge } from '@shopify/app-bridge-react';
 import { Page, TextField, Card } from "@shopify/polaris";
 import { connect } from 'react-redux';
@@ -14,110 +14,127 @@ const QUERY_SHOP = gql`
       name,
       description,
       email,
-      primaryDomain {
-        id
-      },
       myshopifyDomain,
-      id,
-      billingAddress {
-        formatted,
-        firstName,
-        lastName,
-        name,
-        company,
-        phone
+      metafield(namespace: "socialCommerce", key: "socialCommerceSiteName") {
+        id,
+        key,
+        value
+      }
+    }
+  }
+`;
+
+const UPDATE_SITE_NAME = gql`
+  mutation UpdateSiteName($metafields: [MetafieldsSetInput!]!) {
+    metafieldsSet(metafields: $metafields) {
+      metafields {
+        key,
+        value,
+        updatedAt
       }
     }
   }
 `;
 
 const Index = ({getShopAction, shop, updateShopAction}) => {
-  const [ cShopId, setCshopId ] = useState();
-  const [ cShopSiteName, setCshopSiteName] = useState('');
-  const [fetchShopDetails, { loading, error, data }] = useLazyQuery(QUERY_SHOP);
+  const [ csId, setCsId ] = useState(); 
+  const [ siteName, setSiteName ] = useState();
+  const [fetchShopDetails, { loading: queryLoading, error: queryError, data: queryData }] = useLazyQuery(QUERY_SHOP);
+  const [updateSiteName, { data: siteData, loading: mutationLoading, error: mutationError }] = useMutation(UPDATE_SITE_NAME, {
+    onError: () => console.log('Error updating Site Name'),
+    onCompleted: (data) => onSiteNameUpdate(data)
+  });
   const app = useAppBridge();
 
   useEffect(() => {
-    if (!data) {
+    if (!queryData) {
       fetchShopDetails();
     }
   }, []);
 
   useEffect(() => {
-    if (data) {
-      const { myshopifyDomain } = data.shop;
+    if (queryData) {
+      const { myshopifyDomain } = queryData.shop;
       getShopAction(myshopifyDomain);
-    }
-  }, [data]);
 
+      setSiteName(queryData?.shop?.metafield?.value);
+    }
+  }, [queryData]);
 
   useEffect(() => {
-    //store cShop data to state 
+    //once claymind shop is retrieved, get ID
     if (shop && shop.length) {
-      setCshopId(shop[0].id);
-      setCshopSiteName(shop[0].siteName);
+      setCsId(shop[0].id);
     }
   }, [shop]);
 
   const handleSiteNameChange = value => {
-    setCshopSiteName(value);
+    setSiteName(value);
   };
 
-  if (loading) return <div>Loading…</div>;
-  if (error) return <div>{error.message}</div>;
+  const onSiteNameUpdate = (data) => {
+    const updatedSiteName = (data?.metafieldsSet?.metafields[0]?.value);
+    const updatedAt = (data?.metafieldsSet?.metafields[0]?.updatedAt);
+    setSiteName(updatedSiteName);
+
+    //save to claymind db
+    updateShopAction({id: csId, siteName: updatedSiteName, updatedAt});
+  };
 
   const updateShop = () => {
-    updateShopAction({id: cShopId, siteName: cShopSiteName });
+    updateSiteName({ variables: { metafields: 
+      [{
+        ownerId:  "gid://shopify/Shop/60808593616",
+        namespace: "socialCommerce",
+        key: "socialCommerceSiteName",
+        value: siteName,
+        type: "single_line_text_field"
+      }]
+    }});
   };
+
+  if (queryLoading) return <div>Loading…</div>;
+  if (queryError) return <div>{queryError.message}</div>;
 
   return (
     <Page>
+      {queryData &&  
       <Card primaryFooterAction={{content: 'Save', onAction: () => updateShop() }}>
         <Card.Section>
           <TextField
               label="Social Commerce Site Name"
               type="text"
               name="siteName"
-              value={cShopSiteName}
+              value={siteName}
               onChange={handleSiteNameChange}
               helpText="for example: Habiliment-RUQGBj"
           />
         </Card.Section>
       </Card>
-      {data && data.shop && shop && 
-      <Card>
-        <Card.Section>
-          <TextField
-            label="Name"
-            type="text"
-            name="name"
-            value={data.shop.name}
-            disabled 
-            autoComplete="off"
-          />
-        </Card.Section>
-        <Card.Section>
-          <TextField
-            label="Email"
-            type="text"
-            name="email"
-            value={data.shop.email}
-            disabled 
-            autoComplete="off"
-          />
-        </Card.Section>
-        <Card.Section>
+      }
+        <Card>
+          <Card.Section>
           <TextField
             label="MyShopify Domain"
             type="text"
             name="myshopifyDomain"
-            value={data.shop.myshopifyDomain}
+            value={queryData?.shop?.myshopifyDomain}
             disabled 
             autoComplete="off"
           />
         </Card.Section>
-      </Card>
-      }
+        { shop && 
+          <Card.Section>
+            <TextField
+              label="Claymind ID"
+              type="text"
+              value={csId}
+              disabled 
+              autoComplete="off"  
+            />
+          </Card.Section> 
+        } 
+        </Card>
     </Page>
   );
 };
