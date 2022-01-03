@@ -1,0 +1,9 @@
+<div class="claymind-crl8" data-site-name="{{ shop.metafields.socialCommerce.socialCommerceSiteName }}" crl8-container-id="product" crl8-filter="productId:'{{ product.selected_or_first_available_variant.sku }}'"></div>
+
+{% schema %}
+{
+  "name": "Product Page Container",
+  "target": "section",
+  "javascript": "social-commerce-init.js"
+}
+{% endschema %}
