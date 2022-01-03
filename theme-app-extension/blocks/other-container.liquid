@@ -5,7 +5,7 @@
 
 <div 
     class="claymind-crl8" 
-    data-crl8-container-id="product" 
+    data-crl8-container-id="{{ block.settings.containerId }}" 
     data-site-name="{{ shop.metafields.socialCommerce.socialCommerceSiteName }}"
 
     {% if hasLocale != "" %}
@@ -27,12 +27,19 @@
 >
 </div>
 
+
 {% schema %}
 {
-  "name": "Product Page Gallery",
+  "name": "Other Page Gallery",
   "target": "section",
   "javascript": "social-commerce-init.js",
-  "settings": [
+  "settings": [ 
+    {
+      "type": "text",
+      "id": "containerId",
+      "label": "Container ID (Required)",
+      "info": "On the Curalate app, choose the desired Gallery, click Embed, On the 2nd code snippet that says 'Place code snippet on pages that you want your Gallery to appear.', copy the value of the data-crl8-container-id attribute.  For example, If your code snippet looks like this: <div data-crl8-container-id=\"gallery\"></div>, enter gallery as the Container ID."
+    },
     {
       "type": "text",
       "id": "locale",
