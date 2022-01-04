@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { gql, useLazyQuery, useMutation } from "@apollo/client";
 import { useAppBridge } from '@shopify/app-bridge-react';
-import { Page, TextField, Card } from "@shopify/polaris";
+import { Banner, Page, TextField, Card, Toast, SkeletonPage, SkeletonBodyText } from "@shopify/polaris";
 import { connect } from 'react-redux';
 import { createStructuredSelector } from 'reselect';
 import { Creators } from '../modules/ducks/shop/shop.actions';
@@ -39,9 +39,11 @@ const UPDATE_SITE_NAME = gql`
 const Index = ({getShopAction, shop, updateShopAction}) => {
   const [ csId, setCsId ] = useState(); 
   const [ siteName, setSiteName ] = useState();
+  const [ hasError, setHasError ] = useState(false);
+  const [ hasResults, setHasResults ] = useState(false);
+
   const [fetchShopDetails, { loading: queryLoading, error: queryError, data: queryData }] = useLazyQuery(QUERY_SHOP);
   const [updateSiteName, { data: siteData, loading: mutationLoading, error: mutationError }] = useMutation(UPDATE_SITE_NAME, {
-    onError: () => console.log('Error updating Site Name'),
     onCompleted: (data) => onSiteNameUpdate(data)
   });
   const app = useAppBridge();
@@ -79,6 +81,8 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
 
     //save to claymind db
     updateShopAction({id: csId, siteName: updatedSiteName, updatedAt});
+
+    setHasResults(true);
   };
 
   const updateShop = () => {
@@ -93,13 +97,34 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
     }});
   };
 
-  if (queryLoading) return <div>Loading…</div>;
-  if (queryError) return <div>{queryError.message}</div>;
+  if (queryLoading) return <SkeletonPage>
+    <Card>
+      <Card sectioned>
+          <SkeletonBodyText lines={4} />
+      </Card>
+    </Card>
+    <Card>
+      <Card sectioned>
+        <SkeletonBodyText lines={2} />
+      </Card>
+    </Card>
+    </SkeletonPage>;
 
   return (
     <Page>
       {queryData &&  
-      <Card primaryFooterAction={{content: 'Save', onAction: () => updateShop() }}>
+      <Card primaryFooterAction={{content: 'Save', onAction: () => updateShop(), loading: mutationLoading }}>
+        { hasResults && 
+          <Card.Section>
+            <Banner
+              title="Data successfully saved!"
+              status="success"
+              onDismiss={() => {setHasResults(false)}}
+            />
+          </Card.Section>
+        } 
+        { queryError && <Banner status="critical">{queryError.message}</Banner> }
+        { mutationError && <Banner status="critical">{mutationError.message}</Banner> }
         <Card.Section>
           <TextField
               label="Social Commerce Site Name"
@@ -114,26 +139,15 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
       }
         <Card>
           <Card.Section>
-          <TextField
-            label="MyShopify Domain"
-            type="text"
-            name="myshopifyDomain"
-            value={queryData?.shop?.myshopifyDomain}
-            disabled 
-            autoComplete="off"
-          />
-        </Card.Section>
-        { shop && 
-          <Card.Section>
             <TextField
-              label="Claymind ID"
+              label="MyShopify Domain"
               type="text"
-              value={csId}
+              name="myshopifyDomain"
+              value={queryData?.shop?.myshopifyDomain}
               disabled 
-              autoComplete="off"  
+              autoComplete="off"
             />
-          </Card.Section> 
-        } 
+          </Card.Section>
         </Card>
     </Page>
   );
