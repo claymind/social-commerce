@@ -12,9 +12,9 @@ export function* updateShopRequest(action) {
 }
 
 export function* getShopRequest(action) {
-  const { myshopifyDomain } = action;
+  const { myshopifyDomain, email } = action;
   try {
-    const result = yield call(getShop, myshopifyDomain);
+    const result = yield call(getShop, myshopifyDomain, email);
     console.log(result);
 
     /// result is undefined if there is an error

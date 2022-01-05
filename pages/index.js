@@ -10,9 +10,6 @@ import { getShop } from '../modules/ducks/shop/shop.selectors';
 const QUERY_SHOP = gql`
   query {
     shop {
-      id,
-      name,
-      description,
       email,
       myshopifyDomain,
       metafield(namespace: "socialCommerce", key: "socialCommerceSiteName") {
@@ -62,8 +59,8 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
 
   useEffect(() => {
     if (queryData) {
-      const { myshopifyDomain } = queryData.shop;
-      getShopAction(myshopifyDomain);
+      const { email, myshopifyDomain } = queryData.shop;
+      getShopAction(myshopifyDomain, email);
 
       setSiteName(queryData?.shop?.metafield?.value);
       setOrigSiteName(queryData?.shop?.metafield?.value);

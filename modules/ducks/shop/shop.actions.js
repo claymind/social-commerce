@@ -6,7 +6,7 @@ const { Types, Creators } = createActions(
     updateShopSuccess: [],
     updateShopFailure: ['error'],
 
-    getShop: ['myshopifyDomain'],
+    getShop: ['myshopifyDomain', 'email'],
     getShopSuccess: ['data'],
     getShopFailure: ['error'],
 
