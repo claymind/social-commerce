@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { gql, useLazyQuery, useMutation } from "@apollo/client";
 import { useAppBridge } from '@shopify/app-bridge-react';
-import { Banner, Page, TextField, Card, Toast, SkeletonPage, SkeletonBodyText } from "@shopify/polaris";
+import { Banner, Page, Link, TextField, Card, FooterHelp, SkeletonPage, SkeletonBodyText } from "@shopify/polaris";
 import { connect } from 'react-redux';
 import { createStructuredSelector } from 'reselect';
 import { Creators } from '../modules/ducks/shop/shop.actions';
@@ -39,13 +39,19 @@ const UPDATE_SITE_NAME = gql`
 const Index = ({getShopAction, shop, updateShopAction}) => {
   const [ csId, setCsId ] = useState(); 
   const [ siteName, setSiteName ] = useState();
+  const [ origSiteName, setOrigSiteName] = useState();
   const [ hasError, setHasError ] = useState(false);
   const [ hasResults, setHasResults ] = useState(false);
 
   const [fetchShopDetails, { loading: queryLoading, error: queryError, data: queryData }] = useLazyQuery(QUERY_SHOP);
   const [updateSiteName, { data: siteData, loading: mutationLoading, error: mutationError }] = useMutation(UPDATE_SITE_NAME, {
-    onCompleted: (data) => onSiteNameUpdate(data)
+    onCompleted: (data) => onSiteNameUpdate(data),
+    refetchQueries: [
+      QUERY_SHOP, // DocumentNode object parsed with gql
+      'fetchShopDetails' // Query name
+    ]
   });
+
   const app = useAppBridge();
 
   useEffect(() => {
@@ -60,6 +66,7 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
       getShopAction(myshopifyDomain);
 
       setSiteName(queryData?.shop?.metafield?.value);
+      setOrigSiteName(queryData?.shop?.metafield?.value);
     }
   }, [queryData]);
 
@@ -84,6 +91,22 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
 
     setHasResults(true);
   };
+
+  const isSiteNameDirty = () => {
+    if (siteName !== origSiteName) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const isSiteNameInvalid = () => {
+    if (!siteName) {
+      return true;
+    }
+
+    return false;
+  }
 
   const updateShop = () => {
     updateSiteName({ variables: { metafields: 
@@ -113,7 +136,13 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
   return (
     <Page>
       {queryData &&  
-      <Card primaryFooterAction={{content: 'Save', onAction: () => updateShop(), loading: mutationLoading }}>
+      <Card 
+        primaryFooterAction={{content: 'Save', 
+        onAction: () => updateShop(), 
+        loading: mutationLoading ,
+        disabled: !isSiteNameDirty() || isSiteNameInvalid()
+      }}
+      >
         { hasResults && 
           <Card.Section>
             <Banner
@@ -133,6 +162,8 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
               value={siteName}
               onChange={handleSiteNameChange}
               helpText="for example: Habiliment-RUQGBj"
+              autoComplete="off"
+              requiredIndicator={true} 
           />
         </Card.Section>
       </Card>
@@ -149,6 +180,12 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
             />
           </Card.Section>
         </Card>
+        <FooterHelp>
+          Learn more about{' '}
+          <Link external url="https://www.claymind.com/social-commerce-help">
+            using the Social Commerce Galleries app.
+          </Link>
+        </FooterHelp>
     </Page>
   );
 };
