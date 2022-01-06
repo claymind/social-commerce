@@ -7,7 +7,6 @@ export const getShop = async (myshopifyDomain, email) => {
   const query = shopsRef.where('myshopifyDomain', '==', myshopifyDomain);
 
   try {
-    const data = [];
     const querySnapShot = await query.get();
 
     if (querySnapShot.empty) {
@@ -20,8 +19,15 @@ export const getShop = async (myshopifyDomain, email) => {
 
       return { id: doc.id, email, myshopifyDomain }
     } else {
-      querySnapShot.forEach((snapshot) => data.push({ id: snapshot.id, ...snapshot.data() }));
-      return data;
+      const queryDocumentSnapshot = querySnapShot.docs[0];
+
+      if (!queryDocumentSnapshot.get("isInstalled")) {
+        queryDocumentSnapshot.ref.update({
+          isInstalled: true,
+          reinstallDate: new Date()
+        });
+      }
+      return { id: queryDocumentSnapshot.id, ...queryDocumentSnapshot.data()};
     }
   } catch (error) {
     throw new Error(error);

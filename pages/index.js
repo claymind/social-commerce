@@ -69,8 +69,8 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
 
   useEffect(() => {
     //once claymind shop is retrieved, get ID
-    if (shop && shop.length) {
-      setCsId(shop[0].id);
+    if (shop) {
+      setCsId(shop.id);
     }
   }, [shop]);
 
