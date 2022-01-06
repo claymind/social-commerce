@@ -45,7 +45,7 @@ app.prepare().then(async () => {
         const response = await Shopify.Webhooks.Registry.register({
           shop,
           accessToken,
-          path: "pubsub://social-commerce-5e155/shopify-webhooks",
+          path: "pubsub://social-commerce-5e155:shopify-webhooks",
           deliveryMethod: DeliveryMethod.PubSub,
           topic: "APP_UNINSTALLED",
           webhookHandler: async (topic, shop, body) =>
