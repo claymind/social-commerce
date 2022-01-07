@@ -33,6 +33,41 @@ const UPDATE_SITE_NAME = gql`
   }
 `;
 
+const DELETE_SITE_NAME = gql`
+mutation metafieldDelete($input: MetafieldDeleteInput!) {
+  metafieldDelete(input: $input) {
+    userErrors {
+      field
+      message
+    }
+  }
+}`
+
+const APP_SUBSCRIBE = gql`
+mutation {
+  appSubscriptionCreate(
+    name: "Super Duper Recurring Plan"
+    returnUrl: "http://super-duper.shopifyapps.com"
+    lineItems: [{
+      plan: {
+        appRecurringPricingDetails: {
+          price: { amount: 10.00, currencyCode: USD }
+          interval: EVERY_30_DAYS
+        }
+      }
+    }]
+  ) {
+    userErrors {
+      field
+      message
+    }
+    confirmationUrl
+    appSubscription {
+      id
+    }
+  }
+}`
+
 const Index = ({getShopAction, shop, updateShopAction}) => {
   const [ csId, setCsId ] = useState(); 
   const [ siteName, setSiteName ] = useState();
@@ -41,8 +76,14 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
   const [ hasResults, setHasResults ] = useState(false);
 
   const [fetchShopDetails, { loading: queryLoading, error: queryError, data: queryData }] = useLazyQuery(QUERY_SHOP);
-  const [updateSiteName, { data: siteData, loading: mutationLoading, error: mutationError }] = useMutation(UPDATE_SITE_NAME, {
+  const [updateSiteName, { loading: updateLoading, error: updateError }] = useMutation(UPDATE_SITE_NAME, {
     onCompleted: (data) => onSiteNameUpdate(data),
+    refetchQueries: [
+      QUERY_SHOP, // DocumentNode object parsed with gql
+      'fetchShopDetails' // Query name
+    ]
+  });
+  const [deleteSiteName, { loading: deleteLoading, error: deleteError }] = useMutation(DELETE_SITE_NAME, {
     refetchQueries: [
       QUERY_SHOP, // DocumentNode object parsed with gql
       'fetchShopDetails' // Query name
@@ -115,6 +156,8 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
         type: "single_line_text_field"
       }]
     }});
+
+    //deleteSiteName({ variables: { input: { id: "gid://shopify/Metafield/20003811328208" }}});
   };
 
   if (queryLoading) return <SkeletonPage>
@@ -136,7 +179,7 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
       <Card 
         primaryFooterAction={{content: 'Save', 
         onAction: () => updateShop(), 
-        loading: mutationLoading ,
+        loading: updateLoading ,
         disabled: !isSiteNameDirty() || isSiteNameInvalid()
       }}
       >
@@ -150,7 +193,7 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
           </Card.Section>
         } 
         { queryError && <Banner status="critical">{queryError.message}</Banner> }
-        { mutationError && <Banner status="critical">{mutationError.message}</Banner> }
+        { updateError && <Banner status="critical">{updateError.message}</Banner> }
         <Card.Section>
           <TextField
               label="Social Commerce Site Name"

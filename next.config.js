@@ -15,6 +15,9 @@ module.exports = {
     REACT_APP_FIREBASE_API_KEY: 'AIzaSyBuoLJFviv42qUZS2PsyMrR3oxp-BSnCmg'
   },
   productionBrowserSourceMaps: true,
+  publicRuntimeConfig: {
+    apiKey: process.env.SHOPIFY_API_KEY
+  },
   webpack: (config) => {
     const env = { API_KEY: apiKey, HOST_URL: host };
     config.plugins.push(new webpack.DefinePlugin(env));

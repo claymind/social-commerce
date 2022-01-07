@@ -1,5 +1,6 @@
 import { ApolloClient, HttpLink, ApolloProvider, InMemoryCache } from "@apollo/client";
 import App from "next/app";
+import getConfig from 'next/config'
 import { AppProvider } from "@shopify/polaris";
 import { Provider, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticatedFetch } from "@shopify/app-bridge-utils";
@@ -55,12 +56,13 @@ function MyProvider(props) {
 
 class MyApp extends App {
   render() {
+    const { publicRuntimeConfig } = getConfig();
     const { Component, pageProps, shopOrigin, host} = this.props;
     return (
       <AppProvider i18n={enTranslations}>
         <Provider
-          config={{
-            apiKey: API_KEY,
+            config={{
+            apiKey: publicRuntimeConfig.apiKey, 
             shopOrigin,
             host,
             forceRedirect: true,
