@@ -3,8 +3,23 @@ const { parsed: localEnv } = require("dotenv").config();
 const webpack = require("webpack");
 const apiKey = JSON.stringify(process.env.SHOPIFY_API_KEY);
 const host = JSON.stringify(process.env.SHOPIFY_APP_URL);
+// Content-Security-Policy: frame-ancestors https://example.myshopify.com https://admin.shopify.com;
+
+const securityHeaders = [{
+  key: 'Content-Security-Policy',
+  value: `frame-ancestors https://*.myshopify.com https://admin.shopify.com`
+}];
 
 module.exports = {
+  async headers() {
+    return [
+      {
+        // Apply these headers to all routes in your application.
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
+    ]
+  },
   env: {
     REACT_APP_FIREBASE_AUTH_DOMAIN: 'social-commerce-5e155.firebaseapp.com',
     REACT_APP_FIREBASE_PROJECT_ID: 'social-commerce-5e155',
