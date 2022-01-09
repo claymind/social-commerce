@@ -62,10 +62,10 @@ class MyApp extends App {
       <AppProvider i18n={enTranslations}>
         <Provider
             config={{
-            apiKey: publicRuntimeConfig.apiKey, 
-            shopOrigin,
-            host,
-            forceRedirect: true,
+              apiKey: publicRuntimeConfig.apiKey, 
+              shopOrigin,
+              host,
+              forceRedirect: true,
           }}
         >
           <ReduxProvider store={store}>

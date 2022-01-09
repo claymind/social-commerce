@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { gql, useLazyQuery, useMutation } from "@apollo/client";
+import { useRouter } from 'next/router'
 import { useAppBridge } from '@shopify/app-bridge-react';
 import { Banner, Page, Link, TextField, Card, FooterHelp, SkeletonPage, SkeletonBodyText } from "@shopify/polaris";
 import { connect } from 'react-redux';
 import { createStructuredSelector } from 'reselect';
 import { Creators } from '../modules/ducks/shop/shop.actions';
 import { getShop } from '../modules/ducks/shop/shop.selectors';
+import getConfig from 'next/config';
+
+const { publicRuntimeConfig } = getConfig();
 
 const QUERY_SHOP = gql`
   query {
@@ -30,8 +34,7 @@ const UPDATE_SITE_NAME = gql`
         updatedAt
       }
     }
-  }
-`;
+  }`;
 
 const DELETE_SITE_NAME = gql`
 mutation metafieldDelete($input: MetafieldDeleteInput!) {
@@ -41,35 +44,26 @@ mutation metafieldDelete($input: MetafieldDeleteInput!) {
       message
     }
   }
-}`
+}`;
 
 const APP_SUBSCRIBE = gql`
-mutation {
-  appSubscriptionCreate(
-    name: "Super Duper Recurring Plan"
-    returnUrl: "http://super-duper.shopifyapps.com"
-    lineItems: [{
-      plan: {
-        appRecurringPricingDetails: {
-          price: { amount: 10.00, currencyCode: USD }
-          interval: EVERY_30_DAYS
-        }
-      }
-    }]
-  ) {
+mutation appSubscriptionCreate($lineItems: [AppSubscriptionLineItemInput!]!, $name: String!, $returnUrl: URL!, $test: Boolean, $trialDays: Int) {
+  appSubscriptionCreate(lineItems: $lineItems, name: $name, returnUrl: $returnUrl, test: $test, trialDays: $trialDays) {
+    appSubscription {
+      id
+    }
+    confirmationUrl,
     userErrors {
       field
       message
-    }
-    confirmationUrl
-    appSubscription {
-      id
     }
   }
 }`
 
 const Index = ({getShopAction, shop, updateShopAction}) => {
+  const router = useRouter()
   const [ csId, setCsId ] = useState(); 
+  const [ isCharging, setIsCharging] = useState(false);
   const [ siteName, setSiteName ] = useState();
   const [ origSiteName, setOrigSiteName] = useState();
   const [ hasError, setHasError ] = useState(false);
@@ -83,18 +77,44 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
       'fetchShopDetails' // Query name
     ]
   });
-  const [deleteSiteName, { loading: deleteLoading, error: deleteError }] = useMutation(DELETE_SITE_NAME, {
-    refetchQueries: [
-      QUERY_SHOP, // DocumentNode object parsed with gql
-      'fetchShopDetails' // Query name
-    ]
+  // const [deleteSiteName, { loading: deleteLoading, error: deleteError }] = useMutation(DELETE_SITE_NAME, {
+  //   refetchQueries: [
+  //     QUERY_SHOP, // DocumentNode object parsed with gql
+  //     'fetchShopDetails' // Query name
+  //   ]
+  // });
+  const [appSubscribe, { loading: appSubscribeLoading, error: appSubscribeError }] = useMutation(APP_SUBSCRIBE, {
+    onCompleted: (data) => onAppSubscribed(data)
   });
 
   const app = useAppBridge();
 
+  const hasExistingSubscription = () => {
+    return true;
+  };
+
   useEffect(() => {
-    if (!queryData) {
-      fetchShopDetails();
+    if (hasExistingSubscription()) {
+      if (!queryData) {
+        fetchShopDetails();
+      } 
+    } else {
+      if (app) {
+      appSubscribe({ variables: {
+          name: "Social Gallery Recurring Plan",
+          trialDays: 7,
+          returnUrl: app.localOrigin, //publicRuntimeConfig.shopifyAppUrl,
+          test: true,
+          lineItems: [{
+            plan: {
+              appRecurringPricingDetails: {
+                price: { amount: 4.99, currencyCode: "USD" },
+                interval: "EVERY_30_DAYS",
+              }
+            }
+          }]
+        }});
+      }
     }
   }, []);
 
@@ -130,6 +150,13 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
     setHasResults(true);
   };
 
+  const onAppSubscribed = (data) => {
+    if (data.appSubscriptionCreate?.appSubscription && !isCharging) {
+      setIsCharging(true);
+      window.top.location = data.appSubscriptionCreate.confirmationUrl;
+    }
+  };
+
   const isSiteNameDirty = () => {
     if (siteName !== origSiteName) {
       return true;
@@ -160,7 +187,7 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
     //deleteSiteName({ variables: { input: { id: "gid://shopify/Metafield/20003811328208" }}});
   };
 
-  if (queryLoading) return <SkeletonPage>
+  if (queryLoading || isCharging) return <SkeletonPage>
     <Card>
       <Card sectioned>
           <SkeletonBodyText lines={4} />
