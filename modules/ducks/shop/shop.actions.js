@@ -2,16 +2,20 @@ import { createActions } from 'reduxsauce';
 
 const { Types, Creators } = createActions(
   {
-    updateShop: ['data'],
-    updateShopSuccess: [],
-    updateShopFailure: ['error'],
+    updateStorefront: ['data'],
+    updateStorefrontSuccess: [],
+    updateStorefrontFailure: ['error'],
 
-    getShop: ['myshopifyDomain', 'email'],
-    getShopSuccess: ['data'],
-    getShopFailure: ['error'],
+    updateStorefrontSubscription: ['subId', 'storefrontId'],
+    updateStorefrontSubscriptionSuccess: [],
+    updateStorefrontSubscriptionFailure: ['error'],
+
+    getStorefront: ['myshopifyDomain', 'email', 'shopifyId'],
+    getStorefrontSuccess: ['data'],
+    getStorefrontFailure: ['error'],
 
   },
-  { prefix: '@Shop/' }
+  { prefix: '@Storefront/' }
 );
 
 export { Types, Creators };

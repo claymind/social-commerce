@@ -57,7 +57,7 @@ function MyProvider(props) {
 class MyApp extends App {
   render() {
     const { publicRuntimeConfig } = getConfig();
-    const { Component, pageProps, shopOrigin, host} = this.props;
+    const { Component, pageProps, shop, shopOrigin, host } = this.props;
     return (
       <AppProvider i18n={enTranslations}>
         <Provider
@@ -70,7 +70,7 @@ class MyApp extends App {
         >
           <ReduxProvider store={store}>
             <PersistGate persistor={persistor}>
-              <MyProvider Component={Component} {...pageProps} />
+              <MyProvider Component={Component} {...pageProps} shop={shop} host={host} hostUrl={publicRuntimeConfig.hostUrl} />
             </PersistGate>
           </ReduxProvider>
         </Provider>

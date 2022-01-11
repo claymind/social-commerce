@@ -8,7 +8,7 @@ const persistConfig = {
 };
 
 const reducers = {
-  shop: shopReducer
+  storefront: shopReducer
 };
 
 const rootReducer = persistCombineReducers(persistConfig, reducers);

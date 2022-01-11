@@ -2,49 +2,71 @@ import { createReducer } from 'reduxsauce';
 import { Types } from './shop.actions';
 
 const INITIAL_STATE = {
-  shop: null
+  storefront: null
 };
 
 export default createReducer(INITIAL_STATE, {
-  [Types.GET_SHOP]: (state) => {
+  [Types.GET_STOREFRONT]: (state) => {
     return {
       ...state,
       error: null,
       isFetching: true
     };
   },
-  [Types.GET_SHOP_SUCCESS]: (state, action) => {
-    const { shop } = action.data;
+  [Types.GET_STOREFRONT_SUCCESS]: (state, action) => {
+    const { storefront } = action.data;
     return {
       ...state,
       error: null,
       isFetching: false,
-      shop
+      storefront
     };
   },
-  [Types.GET_SHOP_FAILURE]: (state, action) => {
+  [Types.GET_STOREFRONT_FAILURE]: (state, action) => {
     return {
       ...state,
       error: action.error,
       isFetching: false,
-      shop: null
+      storefront: null
     };
   },
-  [Types.UPDATE_SHOP]: (state) => {
+  [Types.UPDATE_STOREFRONT]: (state) => {
     return {
       ...state,
       error: null,
       isFetching: true
     };
   },
-  [Types.UPDATE_SHOP_SUCCESS]: (state) => {
+  [Types.UPDATE_STOREFRONT_SUCCESS]: (state) => {
     return {
       ...state,
       error: null,
       isFetching: false
     };
   },
-  [Types.UPDATE_SHOP_FAILURE]: (state, action) => {
+  [Types.UPDATE_STOREFRONT_FAILURE]: (state, action) => {
+    return {
+      ...state,
+      error: action.error,
+      isFetching: false
+    };
+  },
+
+  [Types.UPDATE_STOREFRONT_SUBSCRIPTION]: (state) => {
+    return {
+      ...state,
+      error: null,
+      isFetching: true
+    };
+  },
+  [Types.UPDATE_STOREFRONT_SUBSCRIPTION_SUCCESS]: (state) => {
+    return {
+      ...state,
+      error: null,
+      isFetching: false
+    };
+  },
+  [Types.UPDATE_STOREFRONT_SUBSCRIPTION_FAILURE]: (state, action) => {
     return {
       ...state,
       error: action.error,

@@ -31,7 +31,8 @@ module.exports = {
   },
   productionBrowserSourceMaps: true,
   publicRuntimeConfig: {
-    apiKey: process.env.SHOPIFY_API_KEY
+    apiKey: process.env.SHOPIFY_API_KEY,
+    hostUrl: process.env.SHOPIFY_APP_URL
   },
   webpack: (config) => {
     const env = { API_KEY: apiKey, HOST_URL: host };

@@ -3,9 +3,8 @@ import { firestore } from '../firebase-client/firebase-utils';
 
 const shopsRef = firestore.collection('shops');
 
-export const getShop = async (myshopifyDomain, email) => {
+export const getStorefront = async (myshopifyDomain, email) => {
   const query = shopsRef.where('myshopifyDomain', '==', myshopifyDomain);
-
   try {
     const querySnapShot = await query.get();
 
@@ -34,12 +33,24 @@ export const getShop = async (myshopifyDomain, email) => {
   }
 };
 
-export const updateShop = async (data) => {
+export const updateStorefront = async (data) => {
   const { id, siteName, updatedAt } = data;
   try {
     const shopRef = firestore.doc(`shops/${id}`);
 
     await shopRef.update({siteName, updatedAt});
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+export const updateStorefrontSubscription = async (data) => {
+  const { subId, storefrontId} = data;
+  debugger;
+  try {
+    const shopRef = firestore.doc(`shops/${storefrontId}`);
+
+    await shopRef.update({subscriptionId: subId});
   } catch (error) {
     throw new Error(error);
   }

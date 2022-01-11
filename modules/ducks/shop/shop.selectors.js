@@ -1,5 +1,5 @@
 import { createSelector } from 'reselect';
 
-const shopState = (state) => state.shop;
+const storefrontState = (state) => state.storefront;
 
-export const getShop = createSelector([shopState], ({ shop }) => shop);
+export const getStorefront = createSelector([storefrontState], ({ storefront }) => storefront);

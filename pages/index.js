@@ -1,25 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { gql, useLazyQuery, useMutation } from "@apollo/client";
-import { useRouter } from 'next/router'
-import { useAppBridge } from '@shopify/app-bridge-react';
-import { Banner, Page, Link, TextField, Card, FooterHelp, SkeletonPage, SkeletonBodyText } from "@shopify/polaris";
+// import { useAppBridge } from '@shopify/app-bridge-react';
+import { Banner, EmptyState, Page, Link, TextField, Card, FooterHelp, SkeletonPage, SkeletonBodyText } from "@shopify/polaris";
 import { connect } from 'react-redux';
 import { createStructuredSelector } from 'reselect';
 import { Creators } from '../modules/ducks/shop/shop.actions';
-import { getShop } from '../modules/ducks/shop/shop.selectors';
-import getConfig from 'next/config';
-
-const { publicRuntimeConfig } = getConfig();
+import { getStorefront, getSubscriptionSaved } from '../modules/ducks/shop/shop.selectors';
 
 const QUERY_SHOP = gql`
   query {
     shop {
+      id,
       email,
       myshopifyDomain,
-      metafield(namespace: "socialCommerce", key: "socialCommerceSiteName") {
-        id,
-        key,
-        value
+      metafields(first: 2) {
+        edges {
+          node {
+            namespace
+            key
+            value
+          }
+        }
+      }
+    }
+  }
+`;
+
+const QUERY_SUBSCRIPTION = gql`
+  query getQuerySubscription($id: ID!) {
+    node(id: $id) {
+      ...on AppSubscription {
+        id
+        name
+        status
+        test
       }
     }
   }
@@ -36,15 +50,26 @@ const UPDATE_SITE_NAME = gql`
     }
   }`;
 
-const DELETE_SITE_NAME = gql`
-mutation metafieldDelete($input: MetafieldDeleteInput!) {
-  metafieldDelete(input: $input) {
-    userErrors {
-      field
-      message
+const SAVE_SOCIAL_GALLERY_ID = gql`
+  mutation SaveSocialGalleryId($metafields: [MetafieldsSetInput!]!) {
+    metafieldsSet(metafields: $metafields) {
+      metafields {
+        key,
+        value,
+        updatedAt
+      }
     }
-  }
-}`;
+  }`;
+
+// const DELETE_SITE_NAME = gql`
+// mutation metafieldDelete($input: MetafieldDeleteInput!) {
+//   metafieldDelete(input: $input) {
+//     userErrors {
+//       field
+//       message
+//     }
+//   }
+// }`;
 
 const APP_SUBSCRIBE = gql`
 mutation appSubscriptionCreate($lineItems: [AppSubscriptionLineItemInput!]!, $name: String!, $returnUrl: URL!, $test: Boolean, $trialDays: Int) {
@@ -60,80 +85,120 @@ mutation appSubscriptionCreate($lineItems: [AppSubscriptionLineItemInput!]!, $na
   }
 }`
 
-const Index = ({getShopAction, shop, updateShopAction}) => {
-  const router = useRouter()
-  const [ csId, setCsId ] = useState(); 
-  const [ isCharging, setIsCharging] = useState(false);
+const Index = ({
+  getStorefrontAction, 
+  host,
+  hostUrl, 
+  storeFront, 
+  updateStorefrontAction, 
+  updateStorefrontSubscriptionAction }) => {
+
+  const [ socialGalleryId, setSocialGalleryId ] = useState();
+  const [ shopifyStore, setShopifyStore ] = useState();
   const [ siteName, setSiteName ] = useState();
   const [ origSiteName, setOrigSiteName] = useState();
+  const [ hasActiveSubscription, setHasActiveSubscription ] = useState(false);
   const [ hasError, setHasError ] = useState(false);
   const [ hasResults, setHasResults ] = useState(false);
 
-  const [fetchShopDetails, { loading: queryLoading, error: queryError, data: queryData }] = useLazyQuery(QUERY_SHOP);
+  const [fetchShopDetails, { loading: queryLoading, error: queryError, data: shopifyShopData }] = useLazyQuery(QUERY_SHOP);
+  const [fetchShopSubscription, { loading: subLoading, error: subError, data: shopSubscriptionData }] = useLazyQuery(QUERY_SUBSCRIPTION);
+
   const [updateSiteName, { loading: updateLoading, error: updateError }] = useMutation(UPDATE_SITE_NAME, {
     onCompleted: (data) => onSiteNameUpdate(data),
     refetchQueries: [
-      QUERY_SHOP, // DocumentNode object parsed with gql
-      'fetchShopDetails' // Query name
+      QUERY_SHOP, 
+      'fetchShopDetails' 
     ]
   });
+
+  const [saveSocialGalleryId, { loading: saveSocialGalleryIdLoading, error: saveSocialGalleryIdError, data: saveSocialGalleryIdData }] = useMutation(SAVE_SOCIAL_GALLERY_ID);
+
   // const [deleteSiteName, { loading: deleteLoading, error: deleteError }] = useMutation(DELETE_SITE_NAME, {
   //   refetchQueries: [
   //     QUERY_SHOP, // DocumentNode object parsed with gql
   //     'fetchShopDetails' // Query name
   //   ]
   // });
-  const [appSubscribe, { loading: appSubscribeLoading, error: appSubscribeError }] = useMutation(APP_SUBSCRIBE, {
+  const [appSubscribe, { loading: appSubscribeLoading, error: appSubscribeError, data: appSubscriptionData }] = useMutation(APP_SUBSCRIBE, {
     onCompleted: (data) => onAppSubscribed(data)
   });
 
-  const app = useAppBridge();
-
-  const hasExistingSubscription = () => {
-    return true;
-  };
+  //const app = useAppBridge();
 
   useEffect(() => {
-    if (hasExistingSubscription()) {
-      if (!queryData) {
-        fetchShopDetails();
-      } 
-    } else {
-      if (app) {
-      appSubscribe({ variables: {
-          name: "Social Gallery Recurring Plan",
-          trialDays: 7,
-          returnUrl: app.localOrigin, //publicRuntimeConfig.shopifyAppUrl,
-          test: true,
-          lineItems: [{
-            plan: {
-              appRecurringPricingDetails: {
-                price: { amount: 4.99, currencyCode: "USD" },
-                interval: "EVERY_30_DAYS",
-              }
-            }
-          }]
-        }});
-      }
-    }
+    fetchShopDetails();
   }, []);
 
   useEffect(() => {
-    if (queryData) {
-      const { email, myshopifyDomain } = queryData.shop;
-      getShopAction(myshopifyDomain, email);
+    if (shopifyShopData && shopifyShopData.shop) {
+      const { id, email, myshopifyDomain } = shopifyShopData.shop;
 
-      setSiteName(queryData?.shop?.metafield?.value);
-      setOrigSiteName(queryData?.shop?.metafield?.value);
+      setShopifyStore(shopifyShopData.shop);
+
+      if (shopifyShopData.shop.metafields) {
+        const fields = shopifyShopData.shop.metafields;
+
+        const snEdge = fields.edges.find(edge => edge.node.key === "socialCommerceSiteName");
+        const sgEdge = fields.edges.find(edge => edge.node.key === "socialGalleryId");
+
+        if (sgEdge) {
+          setSocialGalleryId(sgEdge.node.value);
+        }
+
+        if (snEdge) {
+          setSiteName(snEdge.node.value);
+          setOrigSiteName(snEdge.node.value);
+        }
+      }
+
+      getStorefrontAction(myshopifyDomain, email, id);
     }
-  }, [queryData]);
+  }, [shopifyShopData]);
 
   useEffect(() => {
-    //once claymind shop is retrieved, get ID
-    if (shop) {
-      setCsId(shop.id);
+    //once claymind shop is retrieved, get ID and subscription ID
+    if (storeFront && storeFront.subscriptionId) {
+      fetchShopSubscription({ variables: {id: storeFront.subscriptionId}});
     }
-  }, [shop]);
+  }, [storeFront]);
+
+  useEffect(() => {
+    if (shopSubscriptionData) {
+      const status = shopSubscriptionData.node.status;
+
+      setHasActiveSubscription(status === 'ACTIVE');
+    }
+  }, [shopSubscriptionData]);
+
+  useEffect(() => {
+    if (appSubscriptionData) {
+      const { appSubscriptionCreate } = appSubscriptionData;
+      //redirect to merchant confirmation screen
+      window.top.location = appSubscriptionCreate.confirmationUrl;
+    }
+  }, [appSubscriptionData]);
+
+  const startFreeTrial = () => {
+    subscribeToApp();
+  };
+
+  const subscribeToApp = () => {
+    appSubscribe({ variables: {
+      name: "Social Gallery Recurring Plan",
+      trialDays: 7,
+      returnUrl: `${hostUrl}/?shop=${storeFront.myshopifyDomain}&host=${host}`,
+      test: true,
+      lineItems: [{
+        plan: {
+          appRecurringPricingDetails: {
+            price: { amount: 4.99, currencyCode: "USD" },
+            interval: "EVERY_30_DAYS",
+          }
+        }
+      }]
+    }});
+  }
 
   const handleSiteNameChange = value => {
     setSiteName(value);
@@ -144,16 +209,23 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
     const updatedAt = (data?.metafieldsSet?.metafields[0]?.updatedAt);
     setSiteName(updatedSiteName);
 
-    //save to claymind db
-    updateShopAction({id: csId, siteName: updatedSiteName, updatedAt});
+    //save sitename to db
+    updateStorefrontAction({id: storeFront.id, siteName: updatedSiteName, updatedAt});
 
     setHasResults(true);
   };
 
   const onAppSubscribed = (data) => {
-    if (data.appSubscriptionCreate?.appSubscription && !isCharging) {
-      setIsCharging(true);
-      window.top.location = data.appSubscriptionCreate.confirmationUrl;
+    if (data.appSubscriptionCreate.appSubscription) {
+
+      //save subscription id and storefront id
+      updateStorefrontSubscriptionAction({
+        subId: data.appSubscriptionCreate.appSubscription.id, 
+        storefrontId: storeFront.id
+      });
+
+      //save storefront id in Shopify as social gallery id
+      updateSocialGalleryId();
     }
   };
 
@@ -173,56 +245,105 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
     return false;
   }
 
-  const updateShop = () => {
-    updateSiteName({ variables: { metafields: 
-      [{
-        ownerId:  "gid://shopify/Shop/60808593616",
-        namespace: "socialCommerce",
-        key: "socialCommerceSiteName",
-        value: siteName,
-        type: "single_line_text_field"
-      }]
-    }});
+  const updateStoreFront = () => {
+    if(shopifyStore) {
+      updateSiteName({ variables: { metafields: 
+        [{
+          ownerId: shopifyStore.id,
+          namespace: "socialCommerce",
+          key: "socialCommerceSiteName",
+          value: siteName,
+          type: "single_line_text_field"
+        }]
+      }});
+    }
 
     //deleteSiteName({ variables: { input: { id: "gid://shopify/Metafield/20003811328208" }}});
   };
 
-  if (queryLoading || isCharging) return <SkeletonPage>
-    <Card>
-      <Card sectioned>
-          <SkeletonBodyText lines={4} />
+  const updateSocialGalleryId = () => {
+    if(shopifyStore  && storeFront.socialGalleryId) {
+      saveSocialGalleryId({ variables: { metafields: 
+        [{
+          ownerId: shopifyStore.id,
+          namespace: "socialCommerce",
+          key: "socialGalleryId",
+          value: storeFront.socialGalleryId,
+          type: "single_line_text_field"
+        }]
+      }});
+    }
+  };
+
+  const MainSkeleton = () => (
+    <SkeletonPage>
+      <Card>
+        <Card sectioned>
+            <SkeletonBodyText lines={4} />
+        </Card>
       </Card>
-    </Card>
-    <Card>
-      <Card sectioned>
-        <SkeletonBodyText lines={2} />
+      <Card>
+        <Card sectioned>
+          <SkeletonBodyText lines={2} />
+        </Card>
       </Card>
-    </Card>
-    </SkeletonPage>;
+    </SkeletonPage>
+  );
+
+  const MainFooter = () => (
+    <FooterHelp>
+      Learn more about{' '}
+      <Link external url="https://www.claymind.com/social-commerce-help">
+        using the Social Gallery app.
+      </Link>
+    </FooterHelp>
+  );
+
+  if (queryLoading || appSubscribeLoading || subLoading) return <MainSkeleton />
+
+  if (!hasActiveSubscription) {
+    return  (
+      <Page>
+        <Card sectioned>
+          <EmptyState
+            heading="Social Gallery"
+            action={{content: 'Start Your Free Trial Now', onAction: ()=> startFreeTrial()}}
+            image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+            fullWidth
+          >
+            <p>
+              7-day free trial. $4.99/month after trial. 
+            </p>
+          </EmptyState>
+        </Card>
+        <MainFooter />
+      </Page>
+    )
+  }
 
   return (
     <Page>
-      {queryData &&  
-      <Card 
-        primaryFooterAction={{content: 'Save', 
-        onAction: () => updateShop(), 
-        loading: updateLoading ,
-        disabled: !isSiteNameDirty() || isSiteNameInvalid()
-      }}
-      >
-        { hasResults && 
+      {hasActiveSubscription && 
+      <>
+      <Card
+          primaryFooterAction={{
+            content: 'Save',
+            onAction: () => updateStoreFront(),
+            loading: updateLoading,
+            disabled: !isSiteNameDirty() || isSiteNameInvalid()
+          }}
+        >
+          {hasResults &&
+            <Card.Section>
+              <Banner
+                title="Data successfully saved!"
+                status="success"
+                onDismiss={() => { setHasResults(false); } } />
+            </Card.Section>}
+          {queryError && <Banner status="critical">{queryError.message}</Banner>}
+          {updateError && <Banner status="critical">{updateError.message}</Banner>}
           <Card.Section>
-            <Banner
-              title="Data successfully saved!"
-              status="success"
-              onDismiss={() => {setHasResults(false)}}
-            />
-          </Card.Section>
-        } 
-        { queryError && <Banner status="critical">{queryError.message}</Banner> }
-        { updateError && <Banner status="critical">{updateError.message}</Banner> }
-        <Card.Section>
-          <TextField
+            <TextField
               label="Social Commerce Site Name"
               type="text"
               name="siteName"
@@ -230,40 +351,44 @@ const Index = ({getShopAction, shop, updateShopAction}) => {
               onChange={handleSiteNameChange}
               helpText="for example: Habiliment-RUQGBj"
               autoComplete="off"
-              requiredIndicator={true} 
-          />
-        </Card.Section>
-      </Card>
-      }
+              requiredIndicator={true} />
+          </Card.Section>
+        </Card>
         <Card>
+          <Card.Section>
+            <TextField
+              label="Social Gallery ID"
+              type="text"
+              name="socialGalleryId"
+              value={socialGalleryId}
+              disabled
+              autoComplete="off" />
+          </Card.Section>
           <Card.Section>
             <TextField
               label="MyShopify Domain"
               type="text"
               name="myshopifyDomain"
-              value={queryData?.shop?.myshopifyDomain}
-              disabled 
-              autoComplete="off"
-            />
+              value={shopifyStore?.myshopifyDomain}
+              disabled
+              autoComplete="off" />
           </Card.Section>
         </Card>
-        <FooterHelp>
-          Learn more about{' '}
-          <Link external url="https://www.claymind.com/social-commerce-help">
-            using the Social Commerce Galleries app.
-          </Link>
-        </FooterHelp>
+        <MainFooter />
+        </>
+      }
     </Page>
   );
 };
 
 const mapStateToProps = createStructuredSelector({
-  shop: getShop
+  storeFront: getStorefront
 });
 
 const actions = {
-  updateShopAction: Creators.updateShop,
-  getShopAction: Creators.getShop
+  updateStorefrontAction: Creators.updateStorefront,
+  updateStorefrontSubscriptionAction: Creators.updateStorefrontSubscription,
+  getStorefrontAction: Creators.getStorefront
 };
 
 export default connect(mapStateToProps, actions)(Index);

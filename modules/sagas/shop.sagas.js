@@ -1,33 +1,44 @@
 import { call, put, takeLatest } from '@redux-saga/core/effects';
 import { Creators, Types } from '../ducks/shop/shop.actions';
-import { getShop, updateShop } from '../../services/shop.service';
+import { getStorefront, updateStorefront, updateStorefrontSubscription } from '../../services/shop.service';
 
-export function* updateShopRequest(action) {
+export function* updateStorefrontRequest(action) {
   try {
-    yield call(updateShop, action.data);
-    yield put(Creators.updateShopSuccess());
+    yield call(updateStorefront, action.data);
+    yield put(Creators.updateStorefrontSuccess());
   } catch (error) {
-    yield put(Creators.updateShopFailure(error.message));
+    yield put(Creators.updateStorefrontFailure(error.message));
   }
 }
 
-export function* getShopRequest(action) {
-  const { myshopifyDomain, email } = action;
+export function* updateStorefrontSubscriptionRequest(action) {
+  const { subId, storefrontId } = action;
   try {
-    const result = yield call(getShop, myshopifyDomain, email);
+    yield call(updateStorefrontSubscription, subId, storefrontId);
+    yield put(Creators.updateStorefrontSubscriptionSuccess());
+  } catch (error) {
+    yield put(Creators.updateStorefrontSubscriptionFailure(error.message));
+  }
+}
+
+export function* getStorefrontRequest(action) {
+  const { myshopifyDomain, email, shopifyId } = action;
+  try {
+    const result = yield call(getStorefront, myshopifyDomain, email, shopifyId);
     console.log(result);
 
     /// result is undefined if there is an error
     if (typeof result === 'undefined') throw new Error(error_message);
   
 
-    yield put(Creators.getShopSuccess({ shop: result }));
+    yield put(Creators.getStorefrontSuccess({ storefront: result }));
   } catch (error) {
-    yield put(Creators.getShopFailure(error.message));
+    yield put(Creators.getStorefrontFailure(error.message));
   }
 }
 
 export default function* shopSagas() {
-  yield takeLatest(Types.GET_SHOP, getShopRequest);
-  yield takeLatest(Types.UPDATE_SHOP, updateShopRequest);
+  yield takeLatest(Types.GET_STOREFRONT, getStorefrontRequest);
+  yield takeLatest(Types.UPDATE_STOREFRONT, updateStorefrontRequest);
+  yield takeLatest(Types.UPDATE_STOREFRONT_SUBSCRIPTION, updateStorefrontSubscriptionRequest);
 }
