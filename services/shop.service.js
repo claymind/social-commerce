@@ -46,7 +46,6 @@ export const updateStorefront = async (data) => {
 
 export const updateStorefrontSubscription = async (data) => {
   const { subId, storefrontId} = data;
-  debugger;
   try {
     const shopRef = firestore.doc(`shops/${storefrontId}`);
 

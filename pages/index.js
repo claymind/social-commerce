@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { gql, useLazyQuery, useMutation } from "@apollo/client";
 // import { useAppBridge } from '@shopify/app-bridge-react';
-import { Banner, EmptyState, Page, Link, TextField, Card, FooterHelp, SkeletonPage, SkeletonBodyText } from "@shopify/polaris";
+import { Banner, EmptyState, TextContainer, Page, Link, TextField, Card, FooterHelp, SkeletonPage, SkeletonBodyText } from "@shopify/polaris";
 import { connect } from 'react-redux';
 import { createStructuredSelector } from 'reselect';
 import { Creators } from '../modules/ducks/shop/shop.actions';
-import { getStorefront, getSubscriptionSaved } from '../modules/ducks/shop/shop.selectors';
+import { getStorefront } from '../modules/ducks/shop/shop.selectors';
 
 const QUERY_SHOP = gql`
   query {
@@ -98,13 +98,12 @@ const Index = ({
   const [ siteName, setSiteName ] = useState();
   const [ origSiteName, setOrigSiteName] = useState();
   const [ hasActiveSubscription, setHasActiveSubscription ] = useState(false);
-  const [ hasError, setHasError ] = useState(false);
   const [ hasResults, setHasResults ] = useState(false);
 
-  const [fetchShopDetails, { loading: queryLoading, error: queryError, data: shopifyShopData }] = useLazyQuery(QUERY_SHOP);
-  const [fetchShopSubscription, { loading: subLoading, error: subError, data: shopSubscriptionData }] = useLazyQuery(QUERY_SUBSCRIPTION);
+  const [fetchShopDetails, { loading: shopifyShopDataLoading, error: shopifyShopDataError, data: shopifyShopData }] = useLazyQuery(QUERY_SHOP);
+  const [fetchShopSubscription, { loading: shopSubscriptionDataLoading, error: shopSubscriptionDataError, data: shopSubscriptionData }] = useLazyQuery(QUERY_SUBSCRIPTION);
 
-  const [updateSiteName, { loading: updateLoading, error: updateError }] = useMutation(UPDATE_SITE_NAME, {
+  const [updateSiteName, { loading: updateSiteNameLoading, error: updateSiteNameError }] = useMutation(UPDATE_SITE_NAME, {
     onCompleted: (data) => onSiteNameUpdate(data),
     refetchQueries: [
       QUERY_SHOP, 
@@ -165,7 +164,7 @@ const Index = ({
 
   useEffect(() => {
     if (shopSubscriptionData) {
-      const status = shopSubscriptionData.node.status;
+      const status = shopSubscriptionData?.node?.status;
 
       setHasActiveSubscription(status === 'ACTIVE');
     }
@@ -262,13 +261,13 @@ const Index = ({
   };
 
   const updateSocialGalleryId = () => {
-    if(shopifyStore  && storeFront.socialGalleryId) {
+    if(shopifyStore  && storeFront.id) {
       saveSocialGalleryId({ variables: { metafields: 
         [{
           ownerId: shopifyStore.id,
           namespace: "socialCommerce",
           key: "socialGalleryId",
-          value: storeFront.socialGalleryId,
+          value: storeFront.id,
           type: "single_line_text_field"
         }]
       }});
@@ -279,12 +278,16 @@ const Index = ({
     <SkeletonPage>
       <Card>
         <Card sectioned>
+          <TextContainer>
             <SkeletonBodyText lines={4} />
+          </TextContainer>
         </Card>
       </Card>
       <Card>
         <Card sectioned>
-          <SkeletonBodyText lines={2} />
+          <TextContainer>
+            <SkeletonBodyText lines={4} />
+          </TextContainer>
         </Card>
       </Card>
     </SkeletonPage>
@@ -293,13 +296,19 @@ const Index = ({
   const MainFooter = () => (
     <FooterHelp>
       Learn more about{' '}
-      <Link external url="https://www.claymind.com/social-commerce-help">
+      <Link external url="https://www.claymind.com/social-gallery-help">
         using the Social Gallery app.
       </Link>
     </FooterHelp>
   );
 
-  if (queryLoading || appSubscribeLoading || subLoading) return <MainSkeleton />
+  if (
+    shopifyShopDataLoading || 
+    appSubscribeLoading || 
+    shopSubscriptionDataLoading || 
+    saveSocialGalleryIdLoading) {
+      return <MainSkeleton />
+    }
 
   if (!hasActiveSubscription) {
     return  (
@@ -323,13 +332,14 @@ const Index = ({
 
   return (
     <Page>
-      {hasActiveSubscription && 
+      {shopifyStore && hasActiveSubscription && 
       <>
       <Card
+          title="Social Commerce (Curalate) Settings"
           primaryFooterAction={{
             content: 'Save',
             onAction: () => updateStoreFront(),
-            loading: updateLoading,
+            loading: updateSiteNameLoading,
             disabled: !isSiteNameDirty() || isSiteNameInvalid()
           }}
         >
@@ -338,42 +348,60 @@ const Index = ({
               <Banner
                 title="Data successfully saved!"
                 status="success"
-                onDismiss={() => { setHasResults(false); } } />
+                onDismiss={() => { setHasResults(false); } } 
+              />
             </Card.Section>}
-          {queryError && <Banner status="critical">{queryError.message}</Banner>}
-          {updateError && <Banner status="critical">{updateError.message}</Banner>}
-          <Card.Section>
-            <TextField
-              label="Social Commerce Site Name"
-              type="text"
-              name="siteName"
-              value={siteName}
-              onChange={handleSiteNameChange}
-              helpText="for example: Habiliment-RUQGBj"
-              autoComplete="off"
-              requiredIndicator={true} />
-          </Card.Section>
-        </Card>
-        <Card>
-          <Card.Section>
-            <TextField
-              label="Social Gallery ID"
-              type="text"
-              name="socialGalleryId"
-              value={socialGalleryId}
-              disabled
-              autoComplete="off" />
-          </Card.Section>
-          <Card.Section>
-            <TextField
-              label="MyShopify Domain"
-              type="text"
-              name="myshopifyDomain"
-              value={shopifyStore?.myshopifyDomain}
-              disabled
-              autoComplete="off" />
-          </Card.Section>
-        </Card>
+
+            {shopifyShopDataError &&  (
+              <Card.Section>
+                <Banner status="critical">{shopifyShopDataError.message}</Banner>
+              </Card.Section>
+            )}
+
+            {shopSubscriptionDataError && (
+              <Card.Section>
+                <Banner status="critical">{shopSubscriptionDataError.message}</Banner>
+              </Card.Section>
+            )}
+
+            {updateSiteNameError && (
+              <Card.Section>
+                <Banner status="critical">{updateSiteNameError.message}</Banner>
+              </Card.Section>
+            )}
+            
+            <Card.Section>
+              <TextField
+                label="Social Commerce Site Name"
+                type="text"
+                name="siteName"
+                value={siteName}
+                onChange={handleSiteNameChange}
+                helpText="for example: Habiliment-RUQGBj"
+                autoComplete="off"
+                requiredIndicator={true} />
+            </Card.Section>
+          </Card>
+          <Card title="Account Information">
+            <Card.Section>
+              <TextField
+                label="Social Gallery ID"
+                type="text"
+                name="socialGalleryId"
+                value={socialGalleryId}
+                disabled
+                autoComplete="off" />
+            </Card.Section>
+            <Card.Section>
+              <TextField
+                label="MyShopify Domain"
+                type="text"
+                name="myshopifyDomain"
+                value={shopifyStore?.myshopifyDomain}
+                disabled
+                autoComplete="off" />
+            </Card.Section>
+          </Card>
         <MainFooter />
         </>
       }
