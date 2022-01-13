@@ -5,7 +5,17 @@
 
 <div 
     class="claymind-crl8" 
-    data-crl8-container-id="{{ block.settings.containerId }}" 
+    {% case block.settings.galleryType %}
+    {% when "home" %}
+      data-crl8-container-id="homepage" 
+    {% when "product" %}
+      data-crl8-container-id="product" 
+    {% when "category" %}
+      data-crl8-container-id="category" 
+    {% when "other" %}
+     data-crl8-container-id="{{ block.settings.containerId }}" 
+    {% endcase %}
+    
     data-site-name="{{ shop.metafields.socialCommerce.socialCommerceSiteName }}"
 
     {% if hasLocale != "" %}
@@ -30,31 +40,58 @@
 
 {% schema %}
 {
-  "name": "Other Page Gallery",
+  "name": "Page Gallery",
   "target": "section",
   "javascript": "social-commerce-init.js",
-  "settings": [ 
-    {
+  "settings": [{
+      "type": "header",
+      "content": "Basic Settings"
+      },{
+      "type": "select",
+      "id": "galleryType",
+      "label": "Gallery Type",
+      "options": [
+        {
+          "value": "home",
+          "label": "Home Page"
+        },
+        {
+        "value": "product",
+        "label": "Product Page"
+        },
+        {
+        "value": "category",
+        "label": "Category Page"
+        },
+        {
+        "value": "other",
+        "label": "Other Page"
+        }
+      ],
+      "info": "If you have a custom name for your gallery, choose Other Page. [Learn more](https://www.claymind.com/social-gallery-help)"
+    }, {
       "type": "text",
       "id": "containerId",
-      "label": "Container ID (Required)",
-      "info": "On the Curalate app, choose the desired Gallery, click Embed, On the 2nd code snippet that says 'Place code snippet on pages that you want your Gallery to appear.', copy the value of the data-crl8-container-id attribute.  For example, If your code snippet looks like this: <div data-crl8-container-id=\"gallery\"></div>, enter gallery as the Container ID."
-    },
-    {
+      "label": "Other Page Container ID",
+      "info": "The container ID for your gallery. Only used for Other Page Gallery Type."
+    }, {
+      "type": "header",
+      "content": "Advanced Settings"
+    }, {
+      "type": "paragraph",
+      "content": "All settings below are optional. To learn more about these settings, [click here](https://www.claymind.com/social-gallery-help)"
+    }, {
       "type": "text",
       "id": "locale",
-      "label": "Locale (Optional)",
-      "info": "Determines which localization strings and which product catalog locale should be used. Locales are returned based off of the \"language-COUNTRY\" format. For example, \"en-GB\" or \"fr-FR\". Leave blank to ignore this setting."
+      "label": "Locale"
     }, {
       "type": "text",
       "id": "apiLocale",
-      "label": "API Locale (Optional)",
-      "info": "Determines which product catalog locale should be used. This will override the data-crl8-locale for API calls. Same as above locales are based off of the \"language-COUNTRY\" format. Leave blank to ignore this setting."
+      "label": "API Locale"
     }, {
       "type": "text",
       "id": "dataSource",
-      "label": "Data Source (Optional)",
-      "info": "This will override any existing gallery implementations you're using with a data source ID. Leave blank to ignore this setting."
+      "label": "Data Source"
     }, {
       "type": "select",
       "id": "filter",
@@ -87,19 +124,17 @@
         "value": "brand",
         "label": "Brand"
         }
-      ],
-      "info": "You can filter the contents of any given Fanreel to better suit the needs of a certain site page by filtering content based on category, label, locale, etc. Set to 'None' to ignore this setting."
+      ]
     }, {
       "type": "text",
       "id": "filterValue",
       "label": "Filter Value",
-      "info": "Enter the filter value based on the filter type you've chosen."
+      "info": "Enter the filter value based on the filter type you chose above."
     }, {
       "type": "checkbox",
       "id": "lazyLoad",
       "label": "Lazy Load",
-      "default": false,
-      "info": "To improve performance, Social Commerce Galleries can be lazy loaded on your site. It is not recommended to use lazy loading if the Social Commerce Gallery is the primary content on the page (ex: full page gallery)."
+      "default": false
     }
   ]
 }

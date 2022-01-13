@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { gql, useLazyQuery, useMutation } from "@apollo/client";
 // import { useAppBridge } from '@shopify/app-bridge-react';
-import { Banner, EmptyState, TextContainer, Page, Link, TextField, Card, FooterHelp, SkeletonPage, SkeletonBodyText } from "@shopify/polaris";
+import { Banner, EmptyState, TextContainer, Page, Link, TextField, Card, FooterHelp, SkeletonDisplayText, SkeletonPage, SkeletonBodyText } from "@shopify/polaris";
 import { connect } from 'react-redux';
 import { createStructuredSelector } from 'reselect';
 import { Creators } from '../modules/ducks/shop/shop.actions';
@@ -33,7 +33,8 @@ const QUERY_SUBSCRIPTION = gql`
         id
         name
         status
-        test
+        test,
+        trialDays
       }
     }
   }
@@ -275,20 +276,34 @@ const Index = ({
   };
 
   const MainSkeleton = () => (
-    <SkeletonPage>
+    <SkeletonPage title="">
       <Card>
         <Card sectioned>
-          <TextContainer>
+        <TextContainer>
             <SkeletonBodyText lines={4} />
           </TextContainer>
         </Card>
       </Card>
-      <Card>
-        <Card sectioned>
+
+      <Card subdued>
+        <Card.Section>
           <TextContainer>
-            <SkeletonBodyText lines={4} />
+            <SkeletonDisplayText size="small" />
+            <SkeletonBodyText lines={2} />
           </TextContainer>
-        </Card>
+        </Card.Section>
+        <Card.Section>
+        <TextContainer>
+            <SkeletonDisplayText size="small" />
+            <SkeletonBodyText lines={2} />
+          </TextContainer>
+        </Card.Section>
+        <Card.Section>
+          <TextContainer>
+            <SkeletonDisplayText size="small" />
+            <SkeletonBodyText lines={2} />
+          </TextContainer>
+        </Card.Section>
       </Card>
     </SkeletonPage>
   );
@@ -331,6 +346,7 @@ const Index = ({
   }
 
   return (
+    <>
     <Page>
       {shopifyStore && hasActiveSubscription && 
       <>
@@ -382,7 +398,16 @@ const Index = ({
                 requiredIndicator={true} />
             </Card.Section>
           </Card>
-          <Card title="Account Information">
+          <Card title="Account Information" subdued>
+            <Card.Section>
+              <TextField
+                label="Subscription Type"
+                type="text"
+                name="socialGalleryId"
+                value={`${shopSubscriptionData?.node?.name} ${shopSubscriptionData?.node?.trialDays && shopSubscriptionData?.node?.trialDays}-day trial` }
+                disabled
+                autoComplete="off" />
+            </Card.Section>
             <Card.Section>
               <TextField
                 label="Social Gallery ID"
@@ -403,9 +428,12 @@ const Index = ({
             </Card.Section>
           </Card>
         <MainFooter />
+        <p></p>
+        
         </>
       }
     </Page>
+    </>
   );
 };
 
