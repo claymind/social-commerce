@@ -55,9 +55,20 @@ function MyProvider(props) {
 }
 
 class MyApp extends App {
+  componentDidMount() {
+    const { publicRuntimeConfig } = getConfig();
+    const { Component, pageProps, shop, shopOrigin, host } = this.props;
+
+    if (!host) {
+      const SCOPES="read_resource_feedbacks,write_resource_feedbacks,read_script_tags,write_script_tags";
+      window.top.location = `https://${shopOrigin}/admin/oauth/authorize?client_id=${publicRuntimeConfig.apiKey}&scope=${SCOPES}&redirect_uri=https://socialgallery.claymind.net/auth/callback&state=CLAYMIND&grant_options[]=per-user`;
+    }
+  }
+
   render() {
     const { publicRuntimeConfig } = getConfig();
     const { Component, pageProps, shop, shopOrigin, host } = this.props;
+
     return (
       <AppProvider i18n={enTranslations}>
         <Provider
@@ -82,7 +93,7 @@ class MyApp extends App {
 MyApp.getInitialProps = async ({ ctx }) => {
   return {
     host: ctx.query.host,
-    shopOrigin: ctx.query.shop
+    shopOrigin: ctx.query.shop,
   };
 };
 

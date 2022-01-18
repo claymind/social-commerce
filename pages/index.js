@@ -185,7 +185,7 @@ const Index = ({
 
   const subscribeToApp = () => {
     appSubscribe({ variables: {
-      name: "Social Gallery Recurring Plan",
+      name: "Social Commerce by Claymind Recurring Plan",
       trialDays: 7,
       returnUrl: `${hostUrl}/?shop=${storeFront.myshopifyDomain}&host=${host}`,
       test: true,
@@ -312,7 +312,7 @@ const Index = ({
     <FooterHelp>
       Learn more about{' '}
       <Link external url="https://www.claymind.com/social-gallery-help">
-        using the Social Gallery app.
+        using the Social Commercy by Claymind app.
       </Link>
     </FooterHelp>
   );
@@ -330,11 +330,12 @@ const Index = ({
       <Page>
         <Card sectioned>
           <EmptyState
-            heading="Social Gallery"
+            heading="Social Commerce by Claymind"
             action={{content: 'Start Your Free Trial Now', onAction: ()=> startFreeTrial()}}
-            image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+            image="https://firebasestorage.googleapis.com/v0/b/social-commerce-5e155.appspot.com/o/SocialGalleryIcon-splash-226x226.jpg?alt=media&token=2eadc2e3-33f9-49f8-ace6-ab14042120bb"
             fullWidth
           >
+            <p>Connect your store with Social Commerce shoppable galleries!</p>
             <p>
               7-day free trial. $4.99/month after trial. 
             </p>
@@ -410,7 +411,7 @@ const Index = ({
             </Card.Section>
             <Card.Section>
               <TextField
-                label="Social Gallery ID"
+                label="App User ID"
                 type="text"
                 name="socialGalleryId"
                 value={socialGalleryId}
