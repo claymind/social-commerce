@@ -60,7 +60,7 @@ class MyApp extends App {
     const { Component, pageProps, shop, shopOrigin, host } = this.props;
 
     if (!host) {
-      const SCOPES="read_resource_feedbacks,write_resource_feedbacks,read_script_tags,write_script_tags";
+      const SCOPES="read_script_tags,write_script_tags";
       window.top.location = `https://${shopOrigin}/admin/oauth/authorize?client_id=${publicRuntimeConfig.apiKey}&scope=${SCOPES}&redirect_uri=https://socialgallery.claymind.net/auth/callback&state=CLAYMIND&grant_options[]=per-user`;
     }
   }

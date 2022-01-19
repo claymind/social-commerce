@@ -185,7 +185,7 @@ const Index = ({
 
   const subscribeToApp = () => {
     appSubscribe({ variables: {
-      name: "Social Commerce by Claymind Recurring Plan",
+      name: "Social Commerce Curalate Recurring Plan",
       trialDays: 7,
       returnUrl: `${hostUrl}/?shop=${storeFront.myshopifyDomain}&host=${host}`,
       test: true,
@@ -312,7 +312,7 @@ const Index = ({
     <FooterHelp>
       Learn more about{' '}
       <Link external url="https://www.claymind.com/social-gallery-help">
-        using the Social Commercy by Claymind app.
+        using the Social Commerce Curalate app.
       </Link>
     </FooterHelp>
   );
@@ -330,12 +330,12 @@ const Index = ({
       <Page>
         <Card sectioned>
           <EmptyState
-            heading="Social Commerce by Claymind"
+            heading="Social Commerce Curalate"
             action={{content: 'Start Your Free Trial Now', onAction: ()=> startFreeTrial()}}
             image="https://firebasestorage.googleapis.com/v0/b/social-commerce-5e155.appspot.com/o/SocialGalleryIcon-splash-226x226.jpg?alt=media&token=2eadc2e3-33f9-49f8-ace6-ab14042120bb"
             fullWidth
           >
-            <p>Connect your store with Social Commerce shoppable galleries!</p>
+            <p>Connect your store with Bazaarvoice Social Commerce shoppable galleries!</p>
             <p>
               7-day free trial. $4.99/month after trial. 
             </p>
@@ -352,7 +352,7 @@ const Index = ({
       {shopifyStore && hasActiveSubscription && 
       <>
       <Card
-          title="Social Commerce (Curalate) Settings"
+          title="Social Commerce Settings"
           primaryFooterAction={{
             content: 'Save',
             onAction: () => updateStoreFront(),
